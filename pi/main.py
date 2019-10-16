@@ -1,73 +1,74 @@
 import sys
 import time
-import threading
+import asyncio
+import numpy as np
 from socket import socket, AF_INET, SOCK_DGRAM, gethostbyname
 
-class Coordinator(object):
-    def __init__(self):
-        self._created = time.time()
+from gpiozero import Device
+from stepper import initialize_stepper
+from stepper_driver.motor import Stepper
+from stepper_driver import config
+from stepper_driver.profiles import accel
 
+import flow_controller
+import led_controller
+from socket_utils import initialize_socket_connection, poll_socket, split_data, check_data_for_cfg
+from encoder import initialize_encoder, get_position, kill_encoder
 
-def initialize_socket_connection(PORT, PACKET_SIZE):
-    SERVER_PORT = PORT
-    SIZE = PACKET_SIZE
-    HOSTNAME = gethostbyname('0.0.0.0')
-    SOCKET_CONN_1 = socket(AF_INET, SOCK_DGRAM)
-    SOCKET_CONN_1.bind((HOSTNAME, SERVER_PORT))
-    return SOCKET_CONN_1
+# EXPERIMENT CONFIGS
+# 0 = Wait state
+# 1 = Closed loop motor, constant odor
+# 2 = Closed loop motor, 1D proportional odor
 
-def check_data_for_cfg(data):
-    if data.startswith('<'):
-        cfg = data[1:-1].split(',')
-    else
-        cfg = []
-    return cfg
-
-
-def poll_socket(sock):
-    (data,addr) = sock.recvfrom(SIZE)
-    return data
-
-def motor_control():
-    return 1
-
-def odor_gradient():
-    return 1
-
-def main():
-
-    coordinator = Coordinator()
-
-    # initialize socket connection
-    sock = initialize_socket_connection(5000, 1024)
-
-    motor_control_thread = threading.Thread(target=motor_control, args=())
-    odor_gradient_thread = threading.Thread(target=odor_gradient, args=())
-
-    initialize
-
-    while True:
-        data = poll_socket(sock)
-        cfg,  = check_if_data_is_config(data)
-
-        if cfg==[]:
-            pass
-
+class SlidingQueue(object):
+    def __init__(self, maxlen):
+        self.maxlen = maxlen
+        self.queue = []
+    
+    def put(self, item):
+        if len(self.queue) < self.maxlen:
+            self.queue.append(item)
         else:
-            safelyKillThread()
-            startNewThread()
+            self.queue.pop(0)
+            self.queue.append(item)
+        return None
+
+    def get(self):
+        ret = self.queue.pop(-1)
+        return ret
+
+def get_value():
+    return myqueue
+
+async def run(stepper):
+    stepper.set_current_position(0)
+    ct = 1
+    
+    while runstate:
+        stepper.set_current_position(get_value(ct-1))
+        val = get_value(ct)
+        stepper.move_to(val)
+        await asyncio.sleep(0)
+    if await stepper.wait_on_move():
+        pass
+    else:
+        stepper.stop()
+
+myqueue = SlidingQueue(10)
+
+sock = initialize_socket_connection(5000)
+stepper = initialize_stepper(2000,2000)
+counter, last_click = initialize_encoder()
+mfc1, mfc2, mfc3 = flow_controller.initialize_mfc()
+l1, l2 = led_controller.initialize_led()
+
+loop = asyncio.get_event_loop()
+try:
+    loop.run_until_complete(run(stepper))
+finally:
+    loop.close()
+    
+            
 
 
-
-
-
-if __name__=='__main__':
-    main()
-
-
-
-
-
-while True:
-
-sys.exit()
+ 
