@@ -22,21 +22,8 @@ def get_position(counter, clkLastState):
         else:
             counter -= 1
     clkLastState = clkState
-    
+
     return counter, clkLastState
 
 def kill_encoder():
     GPIO.cleanup()
-    
-if __name__=='__main__':
-    pos, last_click = initialize_encoder()
-    import time
-    
-    while True:
-        try:
-            pos, last_click = get_position(pos, last_click)
-            print(pos)
-            time.sleep(0.001)
-        except KeyboardInterrupt:
-            kill_encoder()
-            break

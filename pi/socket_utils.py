@@ -14,11 +14,15 @@ def poll_socket(sock):
 
 def split_data(data):
     toks = data[1:-1].split(',')
-    motor_target = toks[0]
-    stpt1 = toks[1]
-    stpt2 = toks[2]
-    stpt3 = toks[3]
-    return motor_target, stpt1, stpt2, stpt3
+    runstate = int(toks[0])
+    motor_target = int(toks[1])
+    mfc1_sp = float(toks[2])
+    mfc2_sp = float(toks[3])
+    mfc3_sp = float(toks[4])
+    led1_sp = float(toks[5])
+    led2_sp = float(toks[6])
+
+    return runstate, [motor_target,mfc1_sp,mfc2_sp,mfc3_sp,led1_sp,led2_sp]
 
 def check_data_for_cfg(data):
     data = data.decode("utf-8")

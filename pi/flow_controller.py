@@ -14,9 +14,13 @@ def initialize_mfc():
     mfc2 = PWMLED(mfc_pin2)
     mfc3 = PWMLED(mfc_pin3)
 
+    mfc1.value = 0.0
+    mfc2.value = 0.0
+    mfc3.value = 0.0
+
     return mfc1, mfc2, mfc3
 
-def change_dutycycles(p1, p2, p3, ds1, ds2, ds3):
+def change_mfc_dutycycles(p1, p2, p3, ds1, ds2, ds3):
     p1.value = ds1
     p2.value = ds2
     p3.value = ds3
