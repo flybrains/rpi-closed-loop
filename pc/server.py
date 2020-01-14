@@ -68,7 +68,7 @@ def run_fictrac_client(LOCAL_HOST, LOCAL_PORT, RPI_HOST, RPI_PORT):
 	hdlr = logging.FileHandler(r'C:\Users\rutalab\Desktop\fictrac-data\client-logs\{}.log'.format(dts))
 	logger.addHandler(hdlr) 
 	logger.setLevel(logging.DEBUG)
-	logger.info('{} ` {}, {}, {}, {}, {}, {}, {}, {}, {}'.format("timestamp", "ft_heading", "ft_xPos","ft_yPos", "motor_step_command", "mfc1_stpt", "mfc2_stpt", "mfc3_stpt", "led1_stpt", "led2_stpt"))
+	logger.info("{} -- {},{},{},{},{},{},{},{},{},{},{},{},{},{}".format("timestamp", "motor_step_command","mfc1_stpt","mfc2_stpt","mfc3_stpt","led1_stpt", "led2_stpt","ft_posx","ft_posy","ft_heading","ft_frame","ft_error","ft_roll","ft_pitch","ft_yaw"))
 
 
 	with socket(AF_INET, SOCK_STREAM) as sock:
@@ -107,11 +107,14 @@ def run_fictrac_client(LOCAL_HOST, LOCAL_PORT, RPI_HOST, RPI_PORT):
 
 				posx = float(toks[15])*3
 				posy = -float(toks[16])*3
-				print(posy)
 				net_vel = float(toks[19])*3
 				heading = float(toks[17])
-
-				
+				ft_heading = heading
+				ft_frame = int(toks[1])
+				ft_error = float(toks[5])
+				ft_roll = float(toks[6])
+				ft_pitch = float(toks[7])
+				ft_yaw = float(toks[8])
 				heading = -heading
 				motorHeadingMap = heading % (2*np.pi)
 				propHead = motorHeadingMap/(2*np.pi)
@@ -135,7 +138,26 @@ def run_fictrac_client(LOCAL_HOST, LOCAL_PORT, RPI_HOST, RPI_PORT):
 						mfc3_sp = (float(config.FLOW_RATE) / 666.0)*(float(config.PERCENT_ACV)/100.0) #acv
 					
 					else:
-						if config.N_ODOR_SOURCES == 1:
+						if config.REPEATING_STRIPS:
+							if np.cos(np.pi*posx/config.XON) < 0:
+								print('(x, y) - (', np.round(posx),',',np.round(posy), ') -- outside of strip')
+								mfc1_sp = 0.0
+								mfc2_sp = float(config.MAX_TOTAL_AIRFLOW)/666.0
+								mfc3_sp = 0.0
+							elif posy >= config.SINGLE_SOURCE_DISTANCE:
+								print('(x, y) - (', np.round(posx),',',np.round(posy), ') -- constant odor')
+								mfc1_sp = 0.0
+								mfc2_sp = 0.0
+								mfc3_sp = float(config.MAX_TOTAL_AIRFLOW)/666.0
+							else:
+								print('(x, y) - (', np.round(posx),',',np.round(posy), ') -- in gradient')
+								mfc1_sp = 0
+								mfc2_sp = (float(config.MAX_TOTAL_AIRFLOW) / 666.0)*float(1-(posy/config.SINGLE_SOURCE_DISTANCE))
+								mfc3_sp = max(0, mfc2_sp)
+								mfc3_sp = (float(config.MAX_TOTAL_AIRFLOW) / 666.0)*float(posy/config.SINGLE_SOURCE_DISTANCE)
+								mfc3_sp = max(0, mfc3_sp)
+
+						elif config.N_ODOR_SOURCES == 1:
 							if posy < 0:
 								mfc1_sp = 0.0
 								mfc2_sp = float(config.MAX_TOTAL_AIRFLOW)/666.0
@@ -214,9 +236,9 @@ def run_fictrac_client(LOCAL_HOST, LOCAL_PORT, RPI_HOST, RPI_PORT):
 					RPI_SOCK.sendto(str.encode('{}'.format(SENDSTRING)), ("192.168.137.10", 5000))
 					now = datetime.now()
 					dts = now.strftime("%m/%d/%Y-%H:%M:%S.%f")
-					logger.info('{} -- {}, {}, {}, {}, {}, {}, {}, {}, {}'.format(dts,heading, posx,posy, motorSendVal, mfc1_sp, mfc2_sp, mfc3_sp, led1_sp, led2_sp))
+					logger.info("{} -- {},{},{},{},{},{},{},{},{},{},{},{},{},{}".format(dts, correctedTarget, mfc1_sp, mfc2_sp, mfc3_sp, led1_sp, led2_sp, posx, posy, ft_heading, ft_frame, ft_error, ft_roll, ft_pitch, ft_yaw))
+					
 
-	
 		except KeyboardInterrupt:
 			SENDSTRING = '<'+ '{},{},{},{},{},{},{}'.format(0, 'a', mfc1_sp, mfc2_sp, mfc3_sp, led1_sp, led2_sp) +'>\n'
 			RPI_SOCK.sendto(str.encode('{}'.format(SENDSTRING)), (RPI_HOST, RPI_PORT))
